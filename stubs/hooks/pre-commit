@@ -1,0 +1,14 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+composer quality
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Quality checks failed. Run 'composer lint' to fix style issues, then re-commit."
+    exit 1
+fi
+
+echo ""
+echo "✅ All checks passed!"

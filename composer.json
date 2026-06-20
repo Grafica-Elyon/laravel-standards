@@ -1,0 +1,52 @@
+{
+  "name": "elyon/laravel-standards",
+  "description": "Internal Laravel package standardizing tooling (Pint, PHPStan, native Git hooks) and shipping the TDD skill across projects.",
+  "type": "laravel-package",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Adenilton Henrique Ribeiro",
+      "email": "eu@adhenrique.com.br"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "illuminate/console": "^12.0 | ^13.0",
+    "illuminate/support": "^12.0 | ^13.0",
+    "larastan/larastan": "^3.0",
+    "laravel/boost": "^2.4.9",
+    "laravel/pint": "^1.25"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0 | ^11.0",
+    "phpunit/phpunit": "^11.0 | ^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Elyon\\LaravelStandards\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Elyon\\LaravelStandards\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "lint": "vendor/bin/pint",
+    "lint-check": "vendor/bin/pint --test",
+    "analyse": "vendor/bin/phpstan analyse"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Elyon\\LaravelStandards\\StandardsServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
