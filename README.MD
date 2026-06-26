@@ -1,6 +1,6 @@
 # Laravel Standards
 
-Internal Laravel package for standardizing Pint, PHPStan, native Git hooks, and PHPUnit-driven TDD guidance.
+Internal Laravel package for standardizing Pint, PHPStan, native Git hooks, PHPUnit-driven TDD and Action Pattern Architecture guidance.
 
 ## Installation
 
@@ -34,9 +34,9 @@ Re-publish the editable tooling stubs with:
 php artisan standards:export
 ```
 
-## TDD skill (delivered via Laravel Boost)
+## TDD and Action Pattern Architecture skills (delivered via Laravel Boost)
 
-Laravel Boost automatically detects this package's TDD skill. Run `php artisan boost:install` once to materialize it in your enabled AI agents.
+Laravel Boost automatically detects this package's TDD and Action Pattern Architecture skills. Run `php artisan boost:install` once to materialize it in your enabled AI agents.
 
 ## Contributing
 

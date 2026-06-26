@@ -1,6 +1,6 @@
 {
   "name": "elyon/laravel-standards",
-  "description": "Internal Laravel package standardizing tooling (Pint, PHPStan, native Git hooks) and shipping the TDD skill across projects.",
+  "description": "Internal Laravel package standardizing tooling (Pint, PHPStan, native Git hooks) and shipping TDD and Action Pattern Architecture skills across projects.",
   "type": "laravel-package",
   "license": "MIT",
   "authors": [

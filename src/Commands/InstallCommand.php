@@ -27,8 +27,8 @@ class InstallCommand extends Command
 
         $this->info('Laravel standards installation completed.');
         $this->newLine();
-        $this->line('Next step: run `php artisan boost:install` to activate the TDD');
-        $this->line('skill (and any other Boost guidelines) in your AI agents.');
+        $this->line('Next step: run `php artisan boost:install` to activate the TDD and Action Pattern Architecture');
+        $this->line('skills (and any other Boost guidelines) in your AI agents.');
 
         return self::SUCCESS;
     }
