@@ -28,6 +28,9 @@ Before writing any code, follow this decision tree:
 ```
 The logic I'm writing...
 
+├─ Is a paginated listing with filters, sorting, or field selection?
+│  → Use QueryFilter in the Controller (see "Listing with QueryFilter" section)
+│
 ├─ Is a query with reusable filters or conditions?
 │  → Scope on the Model (scopeActive, scopeByStatus, etc.)
 │
@@ -60,7 +63,7 @@ An Action is a single-responsibility class that encapsulates a business operatio
 
 ### Rules
 
-1. **One public method**: `handle()`. Internal private methods are allowed to organize steps.
+1. **One public method named `handle()`**. Do NOT use `execute()`, `run()`, or `__invoke()`. The name `handle()` aligns with Laravel's ecosystem convention — Jobs, Listeners, and Console Commands all use `handle()`. Internal private methods are allowed to organize steps.
 2. **Never receives Request or Response**. Receives primitive data: array, DTO, or Model.
 3. **Never decides HTTP status codes**. Never returns `response()->json()`. Returns the result (Model, bool, DTO) or throws an exception.
 4. **Use DB::transaction** when there are multiple write operations or side effects that need to be atomic.
@@ -265,6 +268,78 @@ public function index(): JsonResponse
 }
 ```
 
+### Listing with QueryFilter
+
+For `index()` methods with filtering, sorting, field selection, or includes, use the `QueryFilter`
+support class. It wraps `spatie/laravel-query-builder` and centralizes pagination logic
+(per_page defaults, clamping, query parameter appending).
+
+`QueryFilter` lives in the shared package, not in `app/Support/`. Import it from its package namespace.
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\IndexProductRequest;
+use App\Models\Product;
+use Elyon\LaravelStandards\Support\QueryFilter;
+use Illuminate\Http\JsonResponse;
+use Spatie\QueryBuilder\AllowedFilter;
+
+class ProductController extends Controller
+{
+    public function index(IndexProductRequest $request): JsonResponse
+    {
+        $products = QueryFilter::for(Product::class, $request, [
+            'filters' => [
+                AllowedFilter::exact('category_id'),
+                AllowedFilter::exact('status'),
+                AllowedFilter::partial('search', 'name'),
+            ],
+            'sorts' => ['name', 'price', 'created_at'],
+            'defaultSort' => 'name',
+        ]);
+
+        return response()->json($products);
+    }
+}
+```
+
+When the response needs transformation via API Resources, use `->through()` on the
+paginator result. This is the controller's responsibility, not QueryFilter's:
+
+```php
+public function index(IndexProductRequest $request): JsonResponse
+{
+    $products = QueryFilter::for(Product::class, $request, [
+        'filters' => [
+            AllowedFilter::exact('category_id'),
+            AllowedFilter::exact('status'),
+        ],
+        'sorts' => ['name', 'price'],
+        'defaultSort' => 'name',
+        'includes' => ['category'],
+    ])
+    ->through(fn (Product $product): array => ProductResource::make($product)->resolve($request));
+
+    return response()->json($products);
+}
+```
+
+**QueryFilter config keys** (all optional):
+- `filters` — array passed to `allowedFilters()`
+- `sorts` — array passed to `allowedSorts()`
+- `fields` — array passed to `allowedFields()`
+- `includes` — array passed to `allowedIncludes()`
+- `defaultSort` — string or array passed to `defaultSort()`
+- `defaultPerPage` — int, overrides the global config default (25)
+- `maxPerPage` — int, overrides the global config max (100)
+
+Do NOT build filtering manually with `->when()` blocks in the controller when QueryFilter
+is available. It leads to repetition across controllers and couples filtering logic to each
+controller individually.
+
 ## Models
 
 ### Role
@@ -278,6 +353,51 @@ The Eloquent Model IS the repository layer. Do not create Repository classes to 
 - Accessors and Mutators
 - Casts
 - Table configuration, fillable, etc.
+- **Default attribute values** via `$attributes`
+
+### Default attribute values
+
+Field defaults belong in the Model (via `$attributes`) and in the migration (`->default()`), never
+in the Controller. Use both together: `$attributes` ensures the PHP object always has the value,
+the migration default protects against inserts that bypass Eloquent.
+
+```php
+<?php
+
+namespace App\Models;
+
+use App\Enums\OrderStatus;
+use Illuminate\Database\Eloquent\Model;
+
+class Order extends Model
+{
+    protected $attributes = [
+        'priority' => 1,
+        'status' => OrderStatus::PENDING,
+    ];
+}
+```
+
+In the migration:
+
+```php
+$table->integer('priority')->default(1);
+$table->string('status')->default(OrderStatus::PENDING->value);
+```
+
+Do NOT set defaults in the controller:
+
+```php
+// ❌ WRONG: controller handling defaults
+private function prepareData(array $data): array
+{
+    if (! array_key_exists('priority', $data) || $data['priority'] === null) {
+        $data['priority'] = 1;
+    }
+
+    return $data;
+}
+```
 
 ### Scope example
 
@@ -596,3 +716,70 @@ class CreateUser
 ```
 
 Validation is the FormRequest's responsibility. The Action receives already validated data.
+
+### 7. Action with wrong method name
+
+```php
+// ❌ WRONG: inconsistent with Laravel ecosystem
+class CreateOrder
+{
+    public function execute(array $data): Order { /* ... */ }
+}
+
+// ❌ WRONG
+class CreateOrder
+{
+    public function run(array $data): Order { /* ... */ }
+}
+```
+
+```php
+// ✅ CORRECT: handle() aligns with Jobs, Listeners, Commands
+class CreateOrder
+{
+    public function handle(array $data): Order { /* ... */ }
+}
+```
+
+The method MUST be named `handle()`. Laravel Jobs, Listeners, and Console Commands all use
+`handle()` — Actions follow the same convention for consistency across the codebase.
+
+### 8. Defaults in the Controller instead of the Model
+
+```php
+// ❌ WRONG: controller setting field defaults
+private function prepareData(array $data): array
+{
+    $data['status'] ??= 'active';
+    $data['priority'] ??= 1;
+
+    return $data;
+}
+
+public function store(StoreOrderRequest $request): JsonResponse
+{
+    $order = Order::create($this->prepareData($request->validated()));
+    return response()->json($order, 201);
+}
+```
+
+```php
+// ✅ CORRECT: defaults in the Model via $attributes
+class Order extends Model
+{
+    protected $attributes = [
+        'status' => 'active',
+        'priority' => 1,
+    ];
+}
+
+// Controller stays clean
+public function store(StoreOrderRequest $request): JsonResponse
+{
+    $order = Order::create($request->validated());
+    return response()->json($order, 201);
+}
+```
+
+Default values are domain behavior and belong in the Model. Also set them in the migration
+(`->default()`) as a database-level safety net.

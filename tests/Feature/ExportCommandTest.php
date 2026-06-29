@@ -43,6 +43,21 @@ class ExportCommandTest extends TestCase
         $this->assertSame(file_get_contents(__DIR__.'/../../stubs/hooks/pre-commit'), file_get_contents($this->hostPath.'/.githooks/pre-commit'));
     }
 
+    public function test_it_publishes_the_package_config(): void
+    {
+        // Act
+        $this->artisan('vendor:publish', [
+            '--force' => true,
+            '--tag' => 'elyon-standards-config',
+        ])->assertExitCode(0);
+
+        // Assert
+        $this->assertSame(
+            file_get_contents(__DIR__.'/../../config/elyon-standards.php'),
+            file_get_contents($this->hostPath.'/config/elyon-standards.php'),
+        );
+    }
+
     private function deleteDirectory(string $directory): void
     {
         if (! is_dir($directory)) {

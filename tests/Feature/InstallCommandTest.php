@@ -136,8 +136,8 @@ SCRIPT;
         // Arrange
         $this->artisan('standards:install', ['--force' => true])
             ->expectsOutput('Laravel standards installation completed.')
-            ->expectsOutput('Next step: run `php artisan boost:install` to activate the TDD')
-            ->expectsOutput('skill (and any other Boost guidelines) in your AI agents.')
+            ->expectsOutput('Next step: run `php artisan boost:install` to activate the TDD and Action Pattern Architecture')
+            ->expectsOutput('skills (and any other Boost guidelines) in your AI agents.')
             ->assertExitCode(0);
 
         // Assert

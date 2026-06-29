@@ -15,7 +15,8 @@
     "illuminate/support": "^12.0 | ^13.0",
     "larastan/larastan": "^3.0",
     "laravel/boost": "^2.4.9",
-    "laravel/pint": "^1.25"
+    "laravel/pint": "^1.25",
+    "spatie/laravel-query-builder": "^7.3"
   },
   "require-dev": {
     "orchestra/testbench": "^10.0 | ^11.0",
@@ -35,7 +36,7 @@
     "test": "vendor/bin/phpunit",
     "lint": "vendor/bin/pint",
     "lint-check": "vendor/bin/pint --test",
-    "analyse": "vendor/bin/phpstan analyse"
+    "analyse": "vendor/bin/phpstan analyse --memory-limit=1G"
   },
   "config": {
     "sort-packages": true

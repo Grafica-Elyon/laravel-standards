@@ -10,7 +10,7 @@ class StandardsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // TODO: Register package bindings.
+        $this->mergeConfigFrom(__DIR__.'/../config/elyon-standards.php', 'elyon-standards');
     }
 
     public function boot(): void
@@ -29,5 +29,9 @@ class StandardsServiceProvider extends ServiceProvider
             __DIR__.'/../stubs/phpstan.neon' => base_path('phpstan.neon'),
             __DIR__.'/../stubs/hooks/pre-commit' => base_path('.githooks/pre-commit'),
         ], 'standards-config');
+
+        $this->publishes([
+            __DIR__.'/../config/elyon-standards.php' => config_path('elyon-standards.php'),
+        ], 'elyon-standards-config');
     }
 }
