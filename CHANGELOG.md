@@ -2,14 +2,18 @@
 
 ## 1.2.0 - 2026-06-29
 
-- Added publishable `elyon-standards` config for `QueryFilter` pagination defaults.
-- Added controller-level `defaultPerPage` override support for `QueryFilter`.
+- Added automatic flat filter detection in `QueryFilter`, allowing `?status=active`
+  alongside Spatie's nested `?filter[status]=active` format.
+- Changed string filter config entries in `QueryFilter` to default to
+  `AllowedFilter::exact()`.
 
 ## 1.1.0 - 2026-06-29
 
 - Added `QueryFilter` support class for centralized listing query filtering,
   sorting, field selection, includes, and pagination.
 - Added `spatie/laravel-query-builder` as a runtime dependency.
+- Added publishable `elyon-standards` config for `QueryFilter` pagination defaults.
+- Added controller-level `defaultPerPage` override support for `QueryFilter`.
 
 ## 1.0.0 - 2026-06-28
 

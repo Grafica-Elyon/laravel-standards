@@ -27,10 +27,15 @@ class QueryFilter
      */
     public static function for(string $model, Request $request, array $config): LengthAwarePaginator
     {
-        $query = QueryBuilder::for($model, $request);
+        $filters = array_key_exists('filters', $config)
+            ? self::normalizeFilters($config['filters'])
+            : [];
 
-        if (array_key_exists('filters', $config)) {
-            $query->allowedFilters(...array_values($config['filters']));
+        $queryRequest = self::requestWithFlatFilters($request, $filters);
+        $query = QueryBuilder::for($model, $queryRequest);
+
+        if ($filters !== []) {
+            $query->allowedFilters(...$filters);
         }
 
         if (array_key_exists('sorts', $config)) {
@@ -60,5 +65,70 @@ class QueryFilter
         $paginator = $query->paginate($perPage);
 
         return $paginator->appends($request->query());
+    }
+
+    /**
+     * @param  array<int|string, AllowedFilter|string>  $filters
+     * @return array<int, AllowedFilter>
+     */
+    private static function normalizeFilters(array $filters): array
+    {
+        return array_map(
+            fn (AllowedFilter|string $filter): AllowedFilter => $filter instanceof AllowedFilter
+                ? $filter
+                : AllowedFilter::exact($filter),
+            array_values($filters),
+        );
+    }
+
+    /**
+     * @param  array<int, AllowedFilter>  $filters
+     */
+    private static function requestWithFlatFilters(Request $request, array $filters): Request
+    {
+        if ($filters === []) {
+            return $request;
+        }
+
+        $query = $request->query->all();
+        $filterParameterName = (string) config('query-builder.parameters.filter', 'filter');
+        $nestedFilters = self::nestedFilters($query, $filterParameterName);
+        $flatFilters = [];
+
+        foreach ($filters as $filter) {
+            $filterName = $filter->getName();
+
+            if (array_key_exists($filterName, $nestedFilters) || ! array_key_exists($filterName, $query)) {
+                continue;
+            }
+
+            $flatFilters[$filterName] = $query[$filterName];
+        }
+
+        if ($flatFilters === []) {
+            return $request;
+        }
+
+        $query[$filterParameterName] = array_replace($nestedFilters, $flatFilters);
+
+        $normalizedRequest = Request::createFrom($request);
+        $normalizedRequest->query->replace($query);
+
+        return $normalizedRequest;
+    }
+
+    /**
+     * @param  array<mixed>  $query
+     * @return array<mixed>
+     */
+    private static function nestedFilters(array $query, string $filterParameterName): array
+    {
+        $filters = $query[$filterParameterName] ?? [];
+
+        if (! is_array($filters)) {
+            return [];
+        }
+
+        return $filters;
     }
 }

@@ -126,6 +126,89 @@ class QueryFilterTest extends TestCase
         $this->assertSame(['Alpha', 'Gamma'], $paginator->getCollection()->pluck('name')->all());
     }
 
+    public function test_it_auto_detects_and_applies_flat_filters(): void
+    {
+        $this->createPost('Alpha', 'published', 2);
+        $this->createPost('Beta', 'draft', 1);
+        $this->createPost('Gamma', 'published', 3);
+
+        $paginator = QueryFilter::for(
+            QueryFilterPost::class,
+            $this->request(['status' => 'published']),
+            ['filters' => ['status']],
+        );
+
+        $this->assertSame(2, $paginator->total());
+        $this->assertSame(['Alpha', 'Gamma'], $paginator->getCollection()->pluck('name')->all());
+    }
+
+    public function test_it_applies_nested_filters_with_string_config(): void
+    {
+        $this->createPost('Alpha', 'published', 2);
+        $this->createPost('Beta', 'draft', 1);
+        $this->createPost('Gamma', 'published', 3);
+
+        $paginator = QueryFilter::for(
+            QueryFilterPost::class,
+            $this->request(['filter' => ['status' => 'published']]),
+            ['filters' => ['status']],
+        );
+
+        $this->assertSame(2, $paginator->total());
+        $this->assertSame(['Alpha', 'Gamma'], $paginator->getCollection()->pluck('name')->all());
+    }
+
+    public function test_it_applies_flat_and_nested_filters_together(): void
+    {
+        $this->createPost('Alpha', 'published', 2);
+        $this->createPost('Beta', 'draft', 2);
+        $this->createPost('Gamma', 'published', 3);
+
+        $paginator = QueryFilter::for(
+            QueryFilterPost::class,
+            $this->request([
+                'status' => 'published',
+                'filter' => ['priority' => '2'],
+            ]),
+            ['filters' => ['status', 'priority']],
+        );
+
+        $this->assertSame(1, $paginator->total());
+        $this->assertSame(['Alpha'], $paginator->getCollection()->pluck('name')->all());
+    }
+
+    public function test_plain_string_filters_are_treated_as_exact_filters(): void
+    {
+        $this->createPost('Alpha', 'active', 1);
+        $this->createPost('Beta', 'inactive', 2);
+        $this->createPost('Gamma', 'active-archived', 3);
+
+        $paginator = QueryFilter::for(
+            QueryFilterPost::class,
+            $this->request(['filter' => ['status' => 'active']]),
+            ['filters' => ['status']],
+        );
+
+        $this->assertSame(1, $paginator->total());
+        $this->assertSame(['Alpha'], $paginator->getCollection()->pluck('name')->all());
+    }
+
+    public function test_allowed_filter_instances_are_preserved_as_configured(): void
+    {
+        $this->createPost('Alpha', 'published', 1);
+        $this->createPost('Alpine', 'published', 2);
+        $this->createPost('Beta', 'published', 3);
+
+        $paginator = QueryFilter::for(
+            QueryFilterPost::class,
+            $this->request(['filter' => ['name' => 'Al']]),
+            ['filters' => [AllowedFilter::partial('name')]],
+        );
+
+        $this->assertSame(2, $paginator->total());
+        $this->assertSame(['Alpha', 'Alpine'], $paginator->getCollection()->pluck('name')->all());
+    }
+
     public function test_it_applies_allowed_sorts(): void
     {
         $this->createPost('Alpha', 'published', 2);
